@@ -1,0 +1,12 @@
+export type Session={id:string;name:string;email:string;kind:'staff'|'client';cabinet_name:string;csrf:string;cabinet_admin:boolean;knowledge_editor:boolean};
+export type Exercise={id:string;label:string;starts_on:string;ends_on:string;closed:boolean};
+export type Dossier={id:string;name:string;code:string;ice:string;role:string;exercises?:Exercise[]};
+export type Module={id:string;label:string;icon:string;ready:boolean;tabs:string[]};
+export type Document={id:string;filename:string;media_type:string;size:number;category:string;state:string;published:boolean;created_at:number};
+export type Overview={documents:number;received:number;published:number;requests:number;work:number;recent_documents:Document[]};
+export type Work={id:string;title:string;reason:string;state:string;document_id:string};
+export type ClientRequest={id:string;title:string;body:string;reply:string;state:string;created_at:number};
+export type Source={id:string;authority:string;title:string;url:string;versions:number};
+export type SourceVersion={id:string;source_id:string;title:string;citation:string;url:string;sha256:string;text?:string;effective_from:string;effective_to:string|null;published_on:string;captured_at:number;status:string;created_by:string;reviewed_by:string|null;review_note:string};
+export type Assignment={user_id:string;name:string;email:string;role:string;active:boolean};
+export type Member={id:string;name:string;email:string;kind:'staff'|'client'};

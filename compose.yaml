@@ -1,0 +1,96 @@
+name: mizania-v2
+x-backend: &backend
+  build:
+    context: ./backend
+  environment: &backend-env
+    APP_ENV: ${APP_ENV:-development}
+    APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    DATABASE_URL: postgresql+psycopg://mizania:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/mizania
+    STORAGE_PATH: /data/files
+    REDIS_URL: redis://redis:6379/0
+    CLAMAV_HOST: clamav
+    RELEASE_REVIEW_APPROVED: ${RELEASE_REVIEW_APPROVED:-false}
+  volumes:
+    - documents:/data/files
+  security_opt:
+    - no-new-privileges:true
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: mizania
+      POSTGRES_USER: mizania
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U mizania -d mizania']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - queue:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  clamav:
+    image: clamav/clamav:stable
+    volumes:
+      - signatures:/var/lib/clamav
+    # Signature updates require internet access. No published port.
+  migrate:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  worker:
+    <<: *backend
+    command: [dramatiq, app.worker, --processes, '1', --threads, '2']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  dispatcher:
+    <<: *backend
+    command: [python, -m, app.worker]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  web:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://api:8000
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports:
+      - 127.0.0.1:3000:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  database:
+  documents:
+  queue:
+  signatures:

@@ -1,0 +1,93 @@
+name: Verify Mizania
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        database: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test-only-not-a-secret
+          POSTGRES_DB: mizania_test
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U test -d mizania_test" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r backend/requirements.txt -r backend/requirements-test.txt
+      - name: SQLite contract and isolation tests
+        if: matrix.database == 'sqlite'
+        run: PYTHONPATH=backend pytest backend/tests/test_boundaries.py -q --junitxml=backend-results.xml
+      - name: PostgreSQL contract and isolation tests
+        if: matrix.database == 'postgres'
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://test:test-only-not-a-secret@localhost:5432/mizania_test
+        run: PYTHONPATH=backend pytest backend/tests/test_boundaries.py -q --junitxml=backend-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-${{ matrix.database }}
+          path: backend-results.xml
+  web:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      APP_ORIGIN: http://localhost:3000
+      API_INTERNAL_URL: http://127.0.0.1:8000
+      DATABASE_URL: sqlite:////tmp/mizania-browser.db
+      STORAGE_PATH: /tmp/mizania-browser-files
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Resolve web dependencies
+        working-directory: frontend
+        run: npm install
+      - name: Type check and production build
+        working-directory: frontend
+        run: npm run typecheck && npm run build
+      - run: pip install -r backend/requirements.txt
+      - name: Start isolated backend fixtures
+        run: |
+          echo "E2E_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+      - run: |
+          PYTHONPATH=backend python backend/tests/seed_browser.py
+          PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-proxy-headers > /tmp/mizania-api.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/health && break; sleep 1; done
+      - working-directory: frontend
+        run: npx playwright install --with-deps chromium && npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-verification
+          path: |
+            frontend/package-lock.json
+            frontend/playwright-report
+            frontend/test-results
+            /tmp/mizania-api.log
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - working-directory: frontend
+        run: npm install --package-lock-only && npm audit --omit=dev --audit-level=high

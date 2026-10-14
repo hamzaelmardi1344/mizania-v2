@@ -1,0 +1,1 @@
+export default function NotFound(){return <main className="service-state"><h1>Espace indisponible</h1><p>Ce dossier n’existe pas ou votre accès a été retiré.</p><a className="btn primary" href="/">Retour à mes dossiers</a></main>;}
