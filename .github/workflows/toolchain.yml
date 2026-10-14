@@ -1,0 +1,22 @@
+name: Offline verification dependencies
+on:
+  push:
+    branches: ['work/business-foundation']
+    paths: ['.github/workflows/toolchain.yml']
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --prefix frontend
+      - run: tar -czf web-dependencies.tar.gz -C frontend node_modules package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-web-dependencies
+          path: web-dependencies.tar.gz
+          retention-days: 1
