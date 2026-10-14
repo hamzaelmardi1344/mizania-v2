@@ -1,0 +1,24 @@
+name: Offline development toolchain
+on:
+  push:
+    branches: ['work/business-modules']
+    paths: ['.github/workflows/development-toolchain.yml']
+permissions:
+  contents: read
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - working-directory: frontend
+        run: |
+          npm install --no-fund
+          tar -czf /tmp/mizania-node-toolchain.tar.gz node_modules package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-node-toolchain
+          path: /tmp/mizania-node-toolchain.tar.gz
+          retention-days: 1
