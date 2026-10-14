@@ -1,0 +1,332 @@
+MIZANIA V2 — PROMPT COMPLET DE REPRISE DU PROJET
+================================================
+
+Tu reprends un projet existant, pas un projet à créer de zéro. Agis comme un Tech Lead full-stack responsable de comprendre le code, préserver les décisions produit, terminer les fonctionnalités, tester les parcours de bout en bout et préparer une version exploitable. Réponds en français.
+
+Dépôt de référence : https://github.com/hamzaelmardi1344/mizania-v2
+Point de reprise : branche main contenant ce fichier, après synchronisation locale non destructive.
+Lis aussi AGENTS.md, docs/CODEX_HANDOFF.md, STATUS.md, docs/DESIGN.md, docs/RELEASE-GATES.md et README.md. Le présent prompt décrit la cible ; CODEX_HANDOFF.md décrit l'état constaté au relais. Le code et les résultats réellement exécutés priment sur les anciennes annonces d'avancement.
+
+L'objectif utilisateur est la totalité du périmètre discuté, pas un MVP, une maquette ou des modules décoratifs. Ne réduis pas silencieusement le périmètre. Cela ne t'autorise pas à prétendre que tout est terminé : il faut des cas d'usage reliés à du code, des tests et, pour les opérations sensibles, à des règles réglementaires validées. Une fonctionnalité bloquée reste à terminer et son blocage doit être explicite.
+
+1. COMMENCER PAR COMPRENDRE L'EXISTANT
+-------------------------------------
+Avant de modifier le code :
+- Vérifie git status, la branche, les derniers commits, les changements locaux et les branches distantes utiles. Ne supprime aucun travail utilisateur ; pas de reset --hard, force-push ou réinitialisation de données pour faciliter ton travail.
+- Lis entièrement les fichiers de reprise puis les composants, modèles, routes, migrations, traitements et tests. Identifie les contrats réellement implémentés et leurs limites.
+- Vérifie la disponibilité de l'environnement local et des dépendances. Utilise les lockfiles lorsqu'ils sont cohérents. N'effectue pas une migration de framework, une réécriture totale ou une mise à jour majeure sans justification technique et accord sur son impact.
+- Lance le socle de tests existant, le contrôle TypeScript et le build. Conserve les résultats, versions, commandes et erreurs. Un ancien résultat CI est historique, pas la preuve de ton prochain changement.
+- Crée ou complète docs/IMPLEMENTATION_MATRIX.md : pour chaque cas d'usage, identifiant, module, acteur, préconditions, parcours nominal, exceptions, données/états, permissions, référence réglementaire éventuelle, routes/services, écran, tests, statut et blocage. Utilise les statuts À FAIRE, PARTIEL, IMPLÉMENTÉ, TESTÉ, BLOQUÉ. Un bouton ou une table vide ne vaut pas IMPLÉMENTÉ.
+- Produis une analyse courte et concrète, puis commence effectivement l'implémentation. Ne t'arrête pas à un audit, un plan, des interfaces vides ou de la documentation. Les lots sont un ordre technique de réalisation, pas une réduction de la cible.
+
+2. VISION PRODUIT DÉFINITIVEMENT VALIDÉE
+---------------------------------------
+Mizania est une plateforme de production comptable, financière, fiscale et administrative destinée aux cabinets et à leurs clients au Maroc. Elle prépare le travail, vérifie, organise et fait remonter les exceptions. Ce n'est ni un chatbot avec des modules autour, ni un logiciel classique dans lequel l'utilisateur doit tout ressaisir.
+
+L'unité centrale est le DOSSIER CLIENT :
+Connexion personnelle du collaborateur -> page Mes dossiers -> choix parmi ses affectations -> application avec ce dossier actif -> tous les modules métier concernent exclusivement ce dossier.
+
+Exemple : le collaborateur est affecté à Atlas SARL et Sahara Distribution. Après sélection d'Atlas, les documents, factures, écritures, banques, échéances, déclarations, échanges, tâches, révision et indicateurs sont ceux d'Atlas. Il ne choisit pas à nouveau le client dans chaque écran. Le changement de dossier réinitialise proprement le contexte, les caches et les opérations d'affichage. Des onglets ouverts sur des dossiers différents ne doivent jamais se contaminer via un dossier actif global stocké côté serveur ou navigateur.
+
+Hiérarchie : Cabinet -> Dossiers -> Exercices/périodes et modules métier. Le cabinet est le tenant ; le dossier est le périmètre métier. Une mission ou une tâche peut être rattachée au dossier, mais ne remplace pas ce dernier comme point d'entrée. Les anciennes visions centrées sur les missions ou sur une liste d'agents ne doivent pas revenir.
+
+La base de connaissances officielle est transversale, avec application contextualisée au dossier et à la date de l'opération. Elle n'est pas un document client que l'on duplique dans chaque dossier. Les dossiers privés ne doivent jamais enrichir un corpus public par défaut.
+
+3. ACCÈS : MODÈLE B, CABINET + PORTAIL CLIENT
+---------------------------------------------
+Le modèle B est validé. Ne le remplacer ni par un cabinet sans portail ni par une application complète destinée aux employés des entreprises clientes.
+
+Espace cabinet : administrateur, responsables, collaborateurs et réviseurs selon leurs habilitations. Affectations explicites et révocables par dossier. Les rôles ne sont pas un droit implicite sur tous les dossiers. Prévoir lecture, création, modification, préparation, vérification, validation, publication, export et administration, y compris des droits par module lorsqu'ils sont nécessaires.
+
+Portail client : interface indépendante et simple. Invitation sécurisée, activation, connexion, sélection de ses seuls dossiers si plusieurs, dépôt et suivi de ses pièces, demandes de compléments, réponses, échéances communiquées et documents/rapports explicitement publiés. Le client voit ses propres dépôts et les contenus autorisés, jamais les notes internes, travaux de révision, écritures en préparation, données privées d'autres clients ni traces techniques internes.
+
+Un document reçu, un document contrôlé, une écriture préparée, une validation professionnelle et une publication au client sont des états différents. Un dépôt client n'autorise pas la publication d'autres documents du dossier. Les informations internes ne doivent pas apparaître dans les notifications, exports, noms de fichiers ou messages d'erreur du portail.
+
+Une administration technique de la plateforme ne doit pas conférer automatiquement un accès métier aux pièces. Un éventuel accès de support doit être explicite, temporaire, justifié et audité.
+
+Le modèle C (employés du client utilisant des fonctions métier déléguées) reste une possibilité future ; ne pas l'activer implicitement dans la livraison B.
+
+4. DESIGN À CONSERVER, PAS À RÉINVENTER
+---------------------------------------
+Le design Mizania/CabinetAI existant est validé. Conserver la sidebar marine, les fonds clairs, accents indigo/violet, typographie, espacements, cartes arrondies, badges et tableaux. Réutiliser et faire évoluer les composants, ne pas redessiner le produit ou installer un autre kit UI par préférence personnelle.
+
+Références locales : frontend/app/globals.css, frontend/app/v2.css, frontend/components/ui.tsx, frontend/components/workspace.tsx, docs/DESIGN.md. Le document de design indique la provenance de l'ancien dépôt ; ne pas copier son historique, ses secrets ou ses données. Les captures V2 jointes au dossier de relais montrent le rendu développé, pas l'achèvement des fonctions.
+
+L'accueil doit mettre en avant les priorités du dossier, les pièces manquantes, les travaux préparés, les écarts et les validations nécessaires. Éviter de multiplier les menus quand un sous-module ou une vue contextuelle suffit. Toutes les valeurs financières doivent provenir de données persistées et d'un calcul traçable : aucun chiffre fictif dans un écran de production.
+
+Prévoir les états vide, chargement, accès retiré, erreur, absence de source, traitement en cours et reprise après échec ; les formulaires restent lisibles et conservent la saisie après une erreur. Navigation clavier, focus, libellés, dialogues accessibles, responsive et absence de débordement sont nécessaires. Le français est la langue d'interface de référence ; préparer proprement les formats locaux et l'encodage sans inventer un chantier de traduction qui bloque les fonctions.
+
+5. INTELLIGENCE INVISIBLE ET AUTOMATISATION RÉELLE
+-------------------------------------------------
+Les agents et leur orchestration sont exclusivement en arrière-plan. Dans les interfaces du collaborateur et du client, pas de rubrique Agents IA, Assistant IA, automatisation IA, modèle, prompt, score du modèle, chatbot permanent ou console d'exécution technique. Les agents spécialisés restent utiles à l'architecture mais ne sont pas une navigation métier.
+
+Afficher des résultats compréhensibles : Documents reçus, Pièces classées, Écritures préparées, À examiner, Rapprochements proposés, Déclaration préparée, Complément nécessaire. Les raisons, sources, pièces et décisions restent consultables lorsqu'elles sont utiles au professionnel. Invisible ne signifie pas opaque sur les preuves, ni suppression des informations légalement requises sur les traitements de données.
+
+L'utilisateur dépose une pièce ou une opération arrive ; le système prépare ensuite automatiquement les étapes autorisées. Objectif : moins de ressaisie, moins de navigation, traitement des exceptions plutôt que déclenchement manuel de chaque sous-opération. Une automatisation n'est pas validée tant que le flux complet, y compris son échec et sa reprise, n'a pas été testé.
+
+Implémenter des workflows à états explicites, événements métier, outbox transactionnelle, jobs persistants, déduplication, clés d'idempotence, délais de reprise, limites de tentative, mise en quarantaine et supervision. Ne pas garder un simple appel détaché en mémoire à la place d'un workflow durable.
+
+Distinguer règles déterministes et interprétation documentaire. Les modèles peuvent extraire, classer, proposer et expliquer ; ils ne peuvent inventer une règle fiscale, autoriser une opération ou remplacer une validation requise. Les calculs monétaires sont déterministes. Toute sortie structurée est validée avant usage et reliée à ses sources. Les documents sont des données non fiables : une instruction dans un PDF ou une réponse de connecteur n'est jamais un ordre pour l'orchestrateur.
+
+Les outils, recherches, fichiers, contextes et mémoires des agents sont bornés au cabinet/dossier et à leur mandat. Relire les droits au moment de l'exécution. Une révocation, un dossier archivé ou un exercice fermé doivent interrompre l'action correspondante. Définir explicitement quels traitements appartiennent à un acteur humain et lesquels appartiennent à un mandat de service du cabinet, sans contourner les restrictions.
+
+Prévoir réception/extraction documentaire, achats, ventes, comptabilité, banque, trésorerie, fiscalité, révision, reporting et contrôle qualité. Ces responsabilités ne nécessitent pas douze microservices. Préserver le monolithe modulaire et l'exploitation simple.
+
+Aucune transmission de documents réels à un fournisseur externe par défaut. Les clés sont injectées par l'environnement ou un gestionnaire de secrets, jamais par le navigateur ou Git. Tant que les fournisseurs, droits et conditions de transfert ne sont pas validés, l'adaptateur externe reste désactivé explicitement. Une fonction non disponible n'est pas remplacée par une réponse simulée présentée comme réelle.
+
+6. BASE DE CONNAISSANCES RÉGLEMENTAIRE : NON NÉGOCIABLE
+------------------------------------------------------
+Conserver et enrichir la Knowledge Base. Un annuaire de sites, quelques PDF ou une base vectorielle seuls ne suffisent pas à rendre les opérations conformes.
+
+Séparer :
+A. Corpus officiel original : documents, publications, langues, URL exactes, autorité, intégrité et archivage des versions.
+B. Dispositions et interprétations structurées : article, champ d'application, conditions, exceptions, dates d'effet, textes modificateurs/abrogations, hiérarchie et revue professionnelle.
+C. Règles exécutables versionnées : calcul/contrôle déterministe, paramètres, tests, approbations et conditions d'activation.
+D. Preuves d'exécution : règle et source utilisées, données d'entrée, version de calcul, date, résultat, contrôles, approbateur et historique.
+
+Sources à vérifier auprès des sites officiels selon le module : SGG/Bulletin officiel, DGI, ministère de l'Économie et des Finances/CNC/CGNC, CNDP, Office des Changes, Bank Al-Maghrib, CNSS, OMPIC et autres autorités réellement compétentes. L'annuaire initial n'est pas exhaustif. Ne pas importer mécaniquement des règles françaises depuis Bleez, ni considérer un blog, un souvenir de modèle ou une ancienne réponse de chat comme une source officielle.
+
+Vérifier les textes en vigueur au moment de la recherche, mais appliquer à chaque opération la version pertinente pour sa date et son régime. Distinguer publication, entrée en vigueur, fin d'applicabilité et date d'acquisition par Mizania. Conserver l'historique et les dispositions transitoires. Une nouvelle publication ne doit pas réécrire silencieusement une écriture historique.
+
+Chaque règle sensible doit avoir un périmètre explicite, une source vérifiée, une interprétation revue, des tests incluant exceptions et bornes, puis une validation par une autre personne habilitée. Une vérification documentaire à deux personnes ne vaut pas automatiquement homologation du moteur fiscal. Une URL sur un domaine officiel ne prouve pas à elle seule que le texte importé est fidèle.
+
+Ne pas exécuter de code arbitraire extrait d'un texte ni utiliser eval sur une règle générée. Utiliser un moteur de règles restreint, versionné, testable, avec paramètres validés. Les taux, arrondis, seuils, échéances, obligations et durées de conservation ne sont pas à deviner.
+
+Une règle absente, ambiguë, expirée ou contestée bloque la finalisation sensible concernée et indique la preuve ou décision manquante. Le reste de l'activité non sensible peut continuer. Ne pas maintenir tous les modules comme coquilles vides sous prétexte de conformité : implémenter collecte, préparation, contrôles, simulations explicitement désignées et circuits de validation.
+
+Veille cible : acquisition contrôlée de publications -> détection de modification -> analyse d'impact -> revue -> tests -> activation à bonne date -> notification des dossiers affectés. Sécuriser domaines/redirections, réseau, tailles, formats et contenus. Toute extraction conserve un lien avec la source exacte et les pages/articles pertinents.
+
+La cible est la conformité de tout le périmètre couvert, pas une promesse absolue. Aucune mention 100 % conforme ou homologué sans preuve vérifiable et validation professionnelle. Documenter séparément ce qui dépend d'un expert, d'une autorité, d'un fournisseur ou d'une formalité. Un drapeau de configuration de production ne constitue pas cette preuve.
+
+7. PÉRIMÈTRE FONCTIONNEL À COUVRIR SANS PERDRE LES CAS DISCUTÉS
+---------------------------------------------------------------
+Les captures Bleez ont fourni les domaines métier, pas un design à copier. Reprendre les cas ci-dessous dans la matrice et les décomposer en scénarios testables. Ils constituent le périmètre connu ; compléter les cas manquants révélés par l'analyse métier et documenter les décisions, sans déclarer arbitrairement l'exhaustivité.
+
+7.1 CABINET, DOSSIERS, EXERCICES ET ACCÈS
+CAB-01 : connexion, sortie de session, expiration, révocation, récupération de compte et MFA.
+CAB-02 : invitation collaborateur/client, expiration, renvoi, annulation, activation unique et compte déjà existant.
+CAB-03 : dossiers attribués, recherche, tri, pagination, zéro/un/plusieurs dossiers, ouverture et changement de contexte.
+CAB-04 : création et modification de fiche entreprise : identité, adresse, ICE, identifiants fiscaux/légaux pertinents, activité, régime et informations obligatoires selon les sources.
+CAB-05 : exercices et périodes, contrôle des chevauchements, exercice décalé, ouverture, verrouillage, clôture et reprise contrôlée.
+CAB-06 : affectation, délégation, remplacement de collaborateur, changement de responsable, accès temporaires et retrait immédiat.
+CAB-07 : modules et permissions, séparation préparation/validation/publication, absence de contournement par administrateur.
+CAB-08 : archivage, restauration autorisée, fin de mission/départ client, export et restitution, conservation légale sans suppression abusive.
+CAB-09 : portefeuille global limité au périmètre autorisé, priorités, échéances et charge de travail ; aucune fuite multi-dossiers.
+CAB-10 : personnalisation du dossier/cabinet, notifications et paramètres sans modification de la charte validée.
+
+7.2 DOCUMENTS ET COLLECTE
+DOC-01 : dépôt cabinet/client, lots et reprise, fichiers vides/volumineux, formats autorisés, antivirus et quarantaine.
+DOC-02 : doublons exacts et métier, versions, documents incomplets, illisibles ou mal orientés et remplacement sans perte d'historique.
+DOC-03 : répertoires, classement, catégories, tags, recherche texte et recherche contextuelle avec droits vérifiés avant résultat.
+DOC-04 : extraction de données, rapprochement avec tiers/dossier/période, justification par document original et contrôles de cohérence.
+DOC-05 : détection de pièce manquante, demande contextualisée au client et réintégration de sa réponse au workflow.
+DOC-06 : prévisualisation sûre, téléchargement, export, archivage, intégrité, rétention et purge autorisée.
+DOC-07 : partage/retrait de partage, audit, originaux client versus documents internes, accès par lien et liens expirés.
+DOC-08 : aucun document ni extrait d'un autre dossier dans index, miniature, historique, log, notification ou mémoire.
+
+7.3 ACHATS
+Menus d'origine : synthèse, dépôt de pièces, factures à traiter, immobilisations, crédit-bail, notes de frais, documents, paramétrage.
+ACH-01 : tiers fournisseurs, identité et coordonnées, doublons de tiers, suspension et historique des changements.
+ACH-02 : réception de facture, extraction, lignes, bases/montants/taxes, remises, frais et échéances.
+ACH-03 : proposition d'imputation, règles applicables, TVA déductible/non déductible/partielle selon régime validé, pièces justificatives et exceptions.
+ACH-04 : contrôle doublon fournisseur/référence/montant, incohérences, avoir, facture corrigée et lien avec original.
+ACH-05 : préparation d'écriture, validation, comptabilisation et statut relié à la pièce ; pas de double comptabilisation en reprise.
+ACH-06 : règlements partiels/multiples, solde, échéancier et lien avec trésorerie/banque ; pas de paiement réel implicite.
+ACH-07 : notes de frais, justificatifs, règles applicables, circuit de validation et remboursement tracé.
+ACH-08 : immobilisations, acquisition, mise en service, plan d'amortissement, prorata, dotations, cession/sortie et révision du plan selon règles validées.
+ACH-09 : crédit-bail, contrat, loyers, échéancier, option de rachat, pièces et traitement comptable/fiscal applicable ; ne pas traiter tout crédit-bail comme un emprunt.
+ACH-10 : opérations spécifiques, devise/importation, avances et régularisations : analyser le régime au lieu de généraliser un cas domestique simple.
+
+7.4 VENTES
+Menus d'origine : synthèse, dépôt de pièces, devis et factures, produits, caisse, statistiques, paramétrages.
+VEN-01 : tiers clients, produits/services, unités, prix, comptes et paramètres de taxe sourcés.
+VEN-02 : devis, lignes/remises, validité, états, acceptation/refus et conversion en facture sans duplication.
+VEN-03 : facture brouillon, contrôle des mentions, émission validée, numérotation cohérente et document exportable.
+VEN-04 : facture importée, contrôle des données, comptabilisation et lien avec le document d'origine.
+VEN-05 : avoir total/partiel, lien à l'original, correction après émission, annulation tracée, interdiction d'effacement silencieux.
+VEN-06 : encaissement complet/partiel, plusieurs règlements, trop-perçu/avance, remboursement et rapprochement.
+VEN-07 : impayés, balance âgée, échéances, relances et litige ; les communications externes suivent une politique autorisée.
+VEN-08 : caisse et mouvements associés, justificatifs, contrôle du solde, clôture et écart.
+VEN-09 : statistiques basées sur données réelles et distinction brouillon, émis, encaissé, annulé et avoir.
+VEN-10 : pièces et rapports de vente publiés au bon client sans exposer les autres tiers de l'entreprise.
+
+7.5 COMPTABILITÉ
+Menus d'origine : synthèse, comptes, journaux, recherche, éditions, saisies, déclarations, outils, suivi, plan comptable, paramétrage.
+CPT-01 : plan comptable applicable, comptes/auxiliaires, imports contrôlés, activation et protection des comptes déjà utilisés.
+CPT-02 : journaux, types, séquences et paramètres propres au dossier/exercice.
+CPT-03 : saisie/préparation, lignes débit/crédit, contreparties, pièces, dates et exercice, validation de l'équilibre.
+CPT-04 : contrôle des comptes, auxiliaires, périodes closes, doublons et pièces requises avant validation.
+CPT-05 : validation/comptabilisation, séparation des rôles, historique, numérotation, immutabilité et preuve de règle appliquée.
+CPT-06 : correction par contrepassation/écriture rectificative selon règle, pas d'édition cachée d'une écriture validée.
+CPT-07 : lettrage/délettrage autorisé, paiements fractionnés, avoirs, solde et correspondances ambiguës.
+CPT-08 : consultation comptes/journaux/grand livre/balance, recherche multicritère, pagination et exports.
+CPT-09 : ouverture et à-nouveaux, rapprochement d'exercices, cut-off et écritures de régularisation selon procédures validées.
+CPT-10 : préparation de clôture, blocages, visas, clôture contrôlée, nouvel exercice et historique.
+CPT-11 : éditions et états comptables requis selon le périmètre marocain validé ; aucun format français imposé par réflexe.
+CPT-12 : devises, arrondis, valeurs limites, import d'historique et erreurs de mapping avec prévisualisation/rejet explicite.
+
+7.6 BANQUES ET RAPPROCHEMENT
+Menus d'origine : relevé bancaire, rapprochement, saisie des relevés, import.
+BAN-01 : comptes bancaires, rattachement au compte comptable/journal/dossier, devise et droits.
+BAN-02 : import/saisie des relevés, dates, solde initial/final, lignes, identifiant externe et contrôles des totaux.
+BAN-03 : fichiers/relevés réimportés, chevauchements, transactions identiques réelles versus doublons, import partiel et reprise.
+BAN-04 : propositions automatiques expliquées par montant/date/référence/tiers, ambiguïté et validation appropriée.
+BAN-05 : correspondances un-à-un, un-à-plusieurs et plusieurs-à-un ; règlements partiels, frais, différences, avoirs.
+BAN-06 : écart non justifié, pièce manquante, proposition d'écriture et contrôle avant comptabilisation.
+BAN-07 : validation, dérapprochement justifié, historique et prévention du rapprochement multiple d'une même ligne.
+BAN-08 : clôture de période et contrôle d'écart entre relevé et comptabilité ; l'import d'un relevé n'est pas un solde prévisionnel.
+BAN-09 : connecteurs réels seulement après autorisations/contrats ; ne pas simuler une connexion bancaire active.
+
+7.7 TRÉSORERIE
+Menus d'origine : synthèse, échéancier, remises de chèques, emprunts ; caisse en coordination avec ventes/banques.
+TRE-01 : soldes vérifiables, encaissements/décaissements, engagements et statut de réalisation.
+TRE-02 : échéancier clients/fournisseurs, ventilation des paiements, annulation et changements d'échéance tracés.
+TRE-03 : prévisions avec horizon/hypothèses documentés, scénarios et risques de liquidité ; distinguer observé et prévisionnel.
+TRE-04 : remise de chèques, encaissement, rejet, frais et rattachement des opérations.
+TRE-05 : emprunts/contrats, principal/intérêts/frais, échéancier, décaissement, remboursement partiel/anticipé et pièces.
+TRE-06 : caisse, justificatifs, contrôle des mouvements et des clôtures, écarts et permissions.
+TRE-07 : monnaie étrangère et taux sourcés lorsque le périmètre l'exige, sans taux arbitraire.
+TRE-08 : aucune instruction de virement/paiement réel sans workflow distinct, mandat et autorisation explicite.
+
+7.8 FISCALITÉ
+FIS-01 : profil fiscal du dossier, obligations/régimes/périodicités applicables, événements de changement.
+FIS-02 : calendrier d'obligations fondé sur des règles officielles datées ; pas de date d'échéance inventée.
+FIS-03 : préparation TVA, rattachement pièces/écritures, bases/taux/exonérations/déductions selon règles validées.
+FIS-04 : autres déclarations et liasses applicables au périmètre validé, sans prétendre couvrir toutes entreprises/secteurs par un calcul unique.
+FIS-05 : contrôles de cohérence entre comptabilité, achats/ventes, règlements et déclaration.
+FIS-06 : exception, justificatif manquant, règle incertaine, blocage, examen et preuve.
+FIS-07 : préparation, revue, validation, export, dépôt/transmission et accusé : états distincts ; un export n'est pas un dépôt officiel.
+FIS-08 : corrections/rectificatives, périodes antérieures, historique des règles et impact des modifications.
+FIS-09 : simulations identifiées comme telles, dossier de justification et publication client autorisée.
+FIS-10 : intégrations officielles seulement si disponibles et autorisées ; documenter les démarches manuelles restantes.
+
+7.9 RÉVISION, CLÔTURE ET PORTEFEUILLE
+REV-01 : programme de travail par dossier/période, contrôles automatiques et avancement réel.
+REV-02 : anomalies, soldes inhabituels, doublons, comptes d'attente, pièces absentes et incohérences intermodules.
+REV-03 : feuille de travail, notes internes, justificatifs, affectation, réponse, résolution et visa.
+REV-04 : preuve liée aux données contrôlées : si elles changent, le visa devient à réexaminer ; pas de visa persistant sur des données différentes.
+REV-05 : clôture mensuelle/annuelle, tâches et validations bloquantes, archivage des preuves et reprise autorisée.
+REV-06 : supervision transversale du portefeuille limité aux droits, priorisation et remplacement de responsable.
+
+7.10 TABLEAUX DE BORD, ÉDITIONS ET RAPPORTS
+Menus d'origine : synthèse, graphiques standards, graphiques personnels, tableaux synchronisés.
+RAP-01 : indicateurs calculés depuis la base, période/exercice, définitions et origine des chiffres.
+RAP-02 : graphiques standards/personnels, filtres, sauvegarde de vues et tables synchronisées au bon dossier.
+RAP-03 : rapport de gestion et commentaires contextualisés, sources et distinction constat/prévision.
+RAP-04 : génération/export, validation, version, publication client et retrait de publication.
+RAP-05 : publication d'un instantané cohérent ; ne pas modifier silencieusement un rapport déjà communiqué.
+RAP-06 : exports volumineux, droits revérifiés lors de la génération et du téléchargement, neutralisation des contenus dangereux pour le format cible.
+
+7.11 PORTAIL CLIENT ET COMMUNICATION
+POR-01 : invitation/connexion, un ou plusieurs dossiers autorisés, expiration et retrait.
+POR-02 : dépôt depuis ordinateur/mobile, confirmation réelle, statut, pièce remplacée et historique.
+POR-03 : demandes contextualisées, pièce complémentaire, réponse, réouverture et clôture par le cabinet.
+POR-04 : informations, échéances, documents et rapports uniquement autorisés/publiés.
+POR-05 : notifications sécurisées, relances maîtrisées, préférences et états non lus sans divulgation d'autres dossiers.
+POR-06 : pas d'accès aux écritures de travail, notes internes, console technique ou fonctions du modèle C.
+POR-07 : toute éventuelle question en langage naturel reste contextuelle et n'introduit pas une interface Assistant IA.
+
+7.12 TRANSVERSE : TÂCHES, ÉCHÉANCES, RECHERCHE ET ADMINISTRATION
+TRA-01 : une même pièce/action possède des liens cohérents entre documents, tâches, calendrier, comptabilité, fiscalité et rapports.
+TRA-02 : responsabilité, échéance, priorité, dépendances, notifications, suivi et commentaires internes/publics séparés.
+TRA-03 : recherche globale limitée aux droits avec distinction recherche dans le dossier et recherche du portefeuille.
+TRA-04 : connaissances métier transversales intégrées aux modules ; ne pas créer un menu d'expertises/agents qui contredit la vision dossier.
+TRA-05 : paramétrage du cabinet, utilisateurs, affectations, accès et personnalisation ; reprise cohérente des menus administration de Bleez.
+TRA-06 : inventaire des fonctions historiques du dépôt initial, lorsqu'il est disponible et autorisé, pour détecter les expertises omises. Une ancienne proposition contradictoire ne doit pas écraser les décisions V2.
+
+8. ARCHITECTURE TECHNIQUE ET INVARIANTS À RESPECTER
+---------------------------------------------------
+Stack déjà présente : frontend Next.js/React/TypeScript, backend FastAPI/Pydantic/SQLAlchemy, migrations Alembic, PostgreSQL, Redis/Dramatiq, adaptateur ClamAV, Docker Compose et GitHub Actions. SQLite sert notamment aux tests locaux. Ne pas passer arbitrairement à Java, Angular, NestJS, Kubernetes ou des microservices parce qu'ils seraient préférés ailleurs.
+
+Modulariser progressivement le backend et le frontend aujourd'hui concentrés dans main.py et workspace.tsx. Garder des contrats stables, services applicatifs, domaine, persistance et adaptateurs séparés. Éviter un CRUD générique servant à prétendre couvrir tous les métiers.
+
+Modèle métier à construire, pas à supposer déjà présent : fiches entreprise/exercices/périodes, comptes/auxiliaires/journaux/écritures/lignes, tiers, factures/avoirs/devis/lignes/produits, affectations des règlements, comptes bancaires/relevés/transactions/rapprochements, immobilisations/plans, contrats, préparations fiscales, travaux de révision, rapports publiés, règles/versions/preuves.
+
+Montants : Decimal exact ou unités mineures avec politique de précision et d'arrondi explicite. Ne pas utiliser des flottants JavaScript/Python comme source de vérité financière. Préciser devises, conversions, signe des avoirs et traitement des petites différences. Toutes les agrégations doivent être reproductibles.
+
+Comptabilité : transaction atomique, équilibre, exercice/période valides, rattachement des pièces, idempotence, séquences concurrentes et audit. Une écriture validée ne se modifie pas en place. La protection applicative doit être complétée par contraintes et droits base adaptés.
+
+Associations : vérifier cabinet ET dossier sur toutes les clés liées, y compris exercice, pièce, tiers, compte, ligne, publication et règle privée. Éviter le rattachement par id global sans revalidation de portée.
+
+Concurrence : clés d'idempotence et unicité, verrouillage ou contrôle optimiste sur les transitions, détection de version périmée, rejeu de requête, double clic et collision de séquence. Une opération externe éventuellement réalisée avant une panne nécessite une stratégie de reprise sans double effet.
+
+Migrations : la migration initiale utilise actuellement Base.metadata.create_all. Avant d'importer de nouveaux modèles, auditer ce point et figer une baseline reproductible. Ajouter des migrations versionnées explicites et testées depuis une base vide ET une base de la version précédente. Ne pas réinitialiser les données ou modifier opportunément l'historique des migrations appliquées.
+
+Isolation : défense en profondeur côté API, services, contraintes, rôles SQL et politiques PostgreSQL adaptées. RLS n'est pas encore implémenté dans le socle ; ne pas l'annoncer comme acquis. Relire les droits pour recherches, téléchargements, exports différés, jobs et publications. Les objets de cache, fichiers et messages portent un contexte explicite.
+
+Sécurité : sessions révocables, MFA, récupération, Origin/CSRF, cookies sûrs, configuration CORS maîtrisée, anti-abus, invitation temporaire et contrôle serveur. Pas d'accès invité implicite, de contournement d'authentification pour les démos ni de secrets frontend.
+
+Stockage : fichiers privés, antivirus réel, contrôle de taille avant traitements coûteux, URL temporaires autorisées, versionnement/intégrité, chiffrement et clés, rétention documentée et sauvegarde restaurable. Les volumes Docker actuels ne constituent pas à eux seuls un archivage légal certifié.
+
+Exploitation : logs structurés sans secrets ou contenu métier injustifié, identifiants de corrélation, audit des validations/actions/export, métriques, files bloquées, alertes, reprise, santé des dépendances, déploiements et retour arrière sûrs. Les audits applicatifs en base ne résistent pas seuls à un administrateur de base : prévoir protection et archivage appropriés.
+
+Hébergement et prestataires : contexte Maroc, confidentialité et maîtrise des transferts. Ne pas déployer automatiquement des données réelles à l'étranger ou vers un fournisseur de modèles. Vérifier le périmètre juridique et les formalités avec les intervenants habilités ; ne pas inventer une règle générale « tout cloud étranger interdit » ou « tout cloud marocain automatiquement conforme ».
+
+9. TESTS ET CRITÈRES D'ACCEPTATION
+----------------------------------
+Pour chaque module, couvrir nominal, absence/erreur d'entrée, transition interdite, utilisateur sans droit, autre dossier du même cabinet, autre cabinet, client versus collaborateur, retrait d'affectation, répétition, concurrence et panne de dépendance.
+
+Parcours transversaux à rendre exécutables :
+T01. Connexion collaborateur, liste de ses dossiers, entrée dans A, changement vers B, retour et onglets indépendants sans mélange.
+T02. Révocation d'affectation/session pendant navigation, téléchargement, génération d'export et traitement asynchrone.
+T03. Facture déposée par le client -> contrôle/extraction -> complément éventuel -> préparation comptable -> revue -> écriture -> rapprochement -> rapport publié.
+T04. Devis -> acceptation -> facture -> comptabilisation -> encaissement partiel puis complet -> avoir/remboursement cohérent.
+T05. Achat avec pièce manquante, doublon, total incohérent, cas fiscal non couvert et déduction partielle selon règle validée.
+T06. Import bancaire répété et chevauchant -> propositions -> ambiguïté -> rapprochement validé -> annulation auditée.
+T07. Ligne ou pièce d'un autre dossier introduite dans une opération : rejet côté backend et base selon l'invariant.
+T08. Écriture déséquilibrée, période fermée, auxiliaire requis absent : rejet sans transaction partielle.
+T09. Écriture comptabilisée protégée ; correction traçable ; rejouer la validation ne crée rien en double.
+T10. Paiement fractionné, trop-perçu, avoir, allocation multiple et arrondi : soldes corrects.
+T11. Préparation fiscale sur périodes différentes avec versions de règles différentes, preuve de source et blocage de règle absente.
+T12. Nouvelle règle détectée mais non approuvée : aucune activation silencieuse ; exercice historique reproductible.
+T13. Révision signée puis données modifiées : contrôles invalidés/à réexaminer ; clôture impossible si blocages.
+T14. Client voit un rapport publié mais jamais notes internes ou autre dossier ; retrait de publication effectif.
+T15. Redémarrage API/worker après réception, panne réseau, antivirus indisponible, fichier altéré et reprises limitées.
+T16. Un texte documentaire malveillant ne peut modifier les permissions, appeler un outil hors dossier ni exfiltrer des informations.
+T17. Migrations depuis ancienne version sans perte de données ; rollback/restauration documentés.
+T18. Tests d'interface sur formulaires réels, persistance après rechargement, erreurs lisibles, navigation clavier et rendu sans régression.
+
+Les tests réglementaires nécessitent des cas et résultats attendus approuvés. Les fixtures de tests sont synthétiques et clairement identifiées ; une fixture validant une mécanique technique n'est pas une loi.
+
+Ne compter comme terminé que ce qui réunit persistance, route sécurisée, traitement métier, interface connectée, gestion des erreurs, tests pertinents et documentation. Un sous-module absent dans la matrice est un oubli, pas du travail terminé. La matrice couvre aussi les cas non codés et les prérequis externes.
+
+10. ORDRE DE TRAVAIL CONSEILLÉ APRÈS L'AUDIT
+-------------------------------------------
+Lot A : rendre le socle reproductible, corriger les défauts bloquants découverts, sécuriser les migrations et compléter les accès critiques.
+Lot B : référentiel officiel, modèle d'applicabilité et mécanisme d'activation des règles ; développer en parallèle le domaine comptable sans taux ou régime arbitraire.
+Lot C : premier flux vertical achats/documents -> préparation -> validation -> comptabilisation, avec frontend et tests, puis comptes/journaux/grand livre/balance.
+Lot D : ventes/devis/avoirs/tiers/produits et règlements reliés à la comptabilité.
+Lot E : relevés bancaires, rapprochements, trésorerie, caisse, échéanciers et contrats.
+Lot F : fiscalité, révision, clôture, immobilisations/crédit-bail, reporting et publication client ; respecter les dépendances réelles si l'ordre doit évoluer.
+Lot G : couverture des exceptions restantes, automatisations transversales, observabilité, exploitation, performance, sécurité, revue experte et recette finale.
+
+Tu peux réordonner pour éviter les dépendances circulaires, sans supprimer de cas. Ne reporte pas tous les tests ou la sécurité à la fin. N'attends pas la fin de tous les modules pour brancher le frontend. Ne demande pas confirmation pour chaque étape courante de code ; sollicite une décision uniquement pour un choix métier réellement ambigu, une règle à valider, un accès externe, un coût ou un effet sensible non autorisé.
+
+11. COMMANDES ET LIMITES D'ENVIRONNEMENT
+----------------------------------------
+Suivre README.md pour la création locale des comptes et Docker Compose. Aucun compte réel ni mot de passe par défaut n'est fourni. Ne jamais récupérer des secrets depuis une ancienne conversation ou un ancien dépôt.
+
+Tests backend depuis la racine, dans un environnement Python isolé avec les dépendances installées :
+  PYTHONPATH=backend pytest backend/tests -q
+Sous PowerShell, définir $env:PYTHONPATH="backend" puis exécuter pytest backend/tests -q.
+
+Frontend depuis frontend :
+  npm ci (si package-lock.json présent et cohérent), sinon npm install puis examiner et versionner le lockfile.
+  npm run typecheck
+  npm run build
+
+Les tests Playwright existants nécessitent un backend démarré et les données synthétiques créées par backend/tests/seed_browser.py avec APP_ENV=test et E2E_PASSWORD défini. Ne pas invoquer ce script sur des données réelles. Lire le workflow CI pour reproduire exactement les préconditions. Le fixture PostgreSQL réinitialise le schéma de TEST_DATABASE_URL : utiliser exclusivement une base jetable séparée.
+
+Pour Docker, lire .env.example et définir un mot de passe PostgreSQL unique sans le publier. Conserver l'API et les dépendances privées. L'installation des signatures antivirus et l'intégration réelle des services doivent être vérifiées, pas déduites de tests qui simulent l'antivirus.
+
+Ne pas déclarer un test réussi si l'environnement, les dépendances ou l'outil manquent. Décrire la limite puis avancer sur ce qui peut être validé, sans faux résultat.
+
+12. LIVRABLES ET COMPORTEMENT ATTENDUS
+--------------------------------------
+Maintenir le code, les migrations, les contrats, les tests, les données synthétiques, les instructions de démarrage et les documents de reprise dans le dépôt. Faire des commits cohérents avec messages précis et publier sur le dépôt autorisé lorsque l'accès est disponible, sans écraser les travaux de l'utilisateur. Ne pas modifier les permissions du dépôt ni déployer en production sans demande distincte.
+
+Après chaque lot, rendre compte brièvement de ce qui est réellement ajouté, des scénarios métier opérationnels, des tests exécutés et résultats, des limites restantes, des éventuels prérequis réglementaires et des commits. Mettre à jour STATUS.md et la matrice. Ne pas promettre un pourcentage fondé sur le nombre de fichiers ou les menus.
+
+Ne pas abandonner l'objectif complet au profit d'une démonstration statique. Ne pas déclarer l'intégralité des lois marocaines assimilée sans acquisition, revue, versionnement et périmètre. Ne pas masquer des blocages derrière un badge vert. Le but reste une plateforme naturellement proactive, simple et fluide, capable de justifier chaque opération sensible et de protéger strictement chaque dossier.
+
+ACTION IMMÉDIATE : lis les documents et le code, vérifie la base réellement livrée, construis la matrice de couverture, lance les vérifications disponibles, puis commence le premier parcours métier manquant par un lot vertical testable. Ne réponds pas uniquement « j'ai compris » ou avec un plan : prends effectivement le relais sur le code existant.
