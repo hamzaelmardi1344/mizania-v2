@@ -1,0 +1,51 @@
+name: Business workflows
+on:
+  push:
+    branches: [main, 'work/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test-only-not-a-secret
+          POSTGRES_DB: mizania_test
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U test -d mizania_test" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source snapshot for reproducible verification
+        run: |
+          mkdir -p verification
+          git archive --format=zip HEAD -o verification/source.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-snapshot
+          path: verification/source.zip
+          retention-days: 7
+      - run: pip install -r backend/requirements.txt -r backend/requirements-test.txt
+      - name: PostgreSQL business and isolation tests
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://test:test-only-not-a-secret@localhost:5432/mizania_test
+        run: PYTHONPATH=backend pytest backend/tests -q --junitxml=verification/backend.xml
+      - name: Install and compile web
+        working-directory: frontend
+        run: npm install && npm run typecheck && npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: business-results
+          path: |
+            verification/backend.xml
+            frontend/package-lock.json
